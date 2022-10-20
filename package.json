@@ -1,0 +1,30 @@
+{
+  "name": "speed-measure-vite-plugin",
+  "version": "0.0.1",
+  "description": "Measures your vite plugin transform speed",
+  "keywords": [
+    "vite",
+    "speed",
+    "plugin"
+  ],
+  "main": "dist/main.js",
+  "scripts": {
+    "build": "rollup -c"
+  },
+  "license": "ISC",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lbb00/speed-measure-vite-plugin.git"
+  },
+  "files": [
+    "dist"
+  ],
+  "author": "",
+  "devDependencies": {
+    "prettier": "^2.7.1",
+    "rollup": "^3.2.3"
+  },
+  "dependencies": {
+    "chalk": "4"
+  }
+}
