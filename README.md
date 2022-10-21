@@ -6,6 +6,8 @@
 
 Measures your vite plugin transform speed.
 
+![snapshot](https://github.com/lbb00/speed-measure-vite-plugin/blob/docs/snapshot.png)
+
 ## Usage
 
 ```javascript
