@@ -11,7 +11,7 @@
   "scripts": {
     "build": "rollup -c"
   },
-  "license": "ISC",
+  "license": "UNLICENSE (HTTP://UNLICENSE.ORG/)",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/lbb00/speed-measure-vite-plugin.git"
