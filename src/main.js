@@ -11,7 +11,7 @@ export default function speedMeasureWrap(
 ) {
   let pluginsMap = {}
   let runAt = null
-  const interval = setInterval(checkProcessDone, 1000)
+  let interval = null
 
   function checkProcessDone() {
     if (
@@ -52,6 +52,9 @@ export default function speedMeasureWrap(
     const transform = plugin.transform
 
     plugin.transform = function (...args) {
+      if (!interval) {
+        interval = setInterval(checkProcessDone, 1000)
+      }
       const _this = this
       const start = Date.now()
       runAt = start
@@ -87,7 +90,10 @@ export default function speedMeasureWrap(
     name: 'smvp:closeBundleWatcher',
     closeBundle: () => {
       print()
-      clearInterval(interval)
+      if (interval) {
+        clearInterval(interval)
+        interval = null
+      }
     },
   })
 
