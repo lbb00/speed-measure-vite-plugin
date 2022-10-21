@@ -1,11 +1,10 @@
 {
   "name": "speed-measure-vite-plugin",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Measures your vite plugin transform speed",
   "keywords": [
-    "vite",
-    "speed",
-    "plugin"
+    "vite speed",
+    "uniapp"
   ],
   "main": "dist/main.js",
   "scripts": {

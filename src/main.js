@@ -14,16 +14,13 @@ export default function speedMeasureWrap(
   let interval = null
 
   function checkProcessDone() {
-    if (
-      runAt &&
-      runAt < Date.now() - maxTransformTimeOnce &&
-      Object.keys(pluginsMap).length > 0
-    ) {
+    if (runAt && runAt < Date.now() - maxTransformTimeOnce) {
       print()
     }
   }
 
   function print() {
+    if (Object.keys(pluginsMap).length === 0) return
     log(mainColor('SMVP:'))
     const arr = Object.keys(pluginsMap)
       .map((name) => {
