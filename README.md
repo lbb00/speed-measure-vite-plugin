@@ -6,7 +6,7 @@
 
 Measures your vite plugin transform speed.
 
-![snapshot](https://github.com/lbb00/speed-measure-vite-plugin/blob/docs/snapshot.png)
+![snapshot](https://raw.githubusercontent.com/lbb00/speed-measure-vite-plugin/master/docs/snapshot.png)
 
 ## Usage
 
