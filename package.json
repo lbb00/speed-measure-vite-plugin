@@ -1,14 +1,22 @@
 {
   "name": "speed-measure-vite-plugin",
-  "version": "0.1.2",
+  "version": "1.0.0",
   "description": "Measures your vite plugin transform speed",
+  "exports": {
+    ".": {
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
+    }
+  },
+  "main": "dist/main.js",
   "keywords": [
     "vite speed",
     "uniapp"
   ],
-  "main": "dist/main.js",
   "scripts": {
-    "build": "rollup -c"
+    "build": "vite build",
+    "lint": "npx rome check ./src",
+    "format": "npx rome format ./src --write"
   },
   "license": "UNLICENSE (HTTP://UNLICENSE.ORG/)",
   "repository": {
@@ -18,12 +26,8 @@
   "files": [
     "dist"
   ],
-  "author": "",
+  "author": "lbb00",
   "devDependencies": {
-    "prettier": "^2.7.1",
-    "rollup": "^3.2.3"
-  },
-  "dependencies": {
-    "chalk": "4"
+    "vite": "^4.3.6"
   }
 }
