@@ -1,11 +1,11 @@
 {
   "name": "speed-measure-vite-plugin",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Measures your vite plugin transform speed",
   "exports": {
     ".": {
-      "import": "./dist/index.mjs",
-      "require": "./dist/index.js"
+      "import": "./dist/main.mjs",
+      "require": "./dist/main.js"
     }
   },
   "main": "dist/main.js",
