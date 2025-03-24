@@ -6,7 +6,7 @@
 [![Bundlephobia](https://img.shields.io/bundlephobia/minzip/speed-measure-vite-plugin)](https://bundlephobia.com/result?p=speed-measure-vite-plugin)
 [![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=flat&logo=typescript&logoColor=white)](https://github.com/lbb00/speed-measure-vite-plugin)
 
-Measures your vite plugins transform speed. Support vite >= v3.
+Measures your vite plugins transform speed. Support `vite >= v3`.
 
 ![snapshot](https://raw.githubusercontent.com/lbb00/speed-measure-vite-plugin/master/docs/vite-build.png)
 
@@ -21,7 +21,25 @@ export default defineConfig({
 })
 ```
 
-### Opts
+## Options
 
-- sort {function} Default `undefined`. Optional. Sort print by time, like array.sort
-- maxTransformTimeOnce {number} Default `1000`. Optional, ms. Since Vite doesn't provide direct access to lifecycle hooks for pages or the completion of hot updates in development mode, an approximate indication of the transform process completion can be determined using a delay-based approach.
+```javascript
+smvp(plugins, {
+  // Hooks to measure, defaults to ['transform']
+  hooks: ['transform', 'resolveId', 'load'],
+
+  // Sort function for output display, defaults to undefined
+  // Example: sort by time in descending order
+  sort: (a, b) => b - a,
+
+  // Maximum gap time to consider hook process complete (in ms)
+  // Used to detect when a hook batch is finished in dev mode
+  maxGapTimeOnce: 1000,
+
+  // maxTransformTimeOnce is deprecated, use maxGapTimeOnce instead
+})
+```
+
+## How it works
+
+This plugin wraps your Vite plugins and measures the execution time of specified hooks. Since Vite doesn't provide direct access to lifecycle hooks for pages or the completion of hot updates in development mode, an approximate indication of the hook process completion is determined using a gap-based approach.
