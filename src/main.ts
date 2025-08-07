@@ -1,8 +1,14 @@
 import { log, colorPrimary, colorGreen } from './log'
 import type { PluginOption, Plugin } from 'vite'
 import { decorateVitePluginOption } from 'decorate-vite-plugin'
+import { performance } from 'node:perf_hooks'
 
-type Stats = { total: number; parallel: number; runAt: number; runCount: number }
+type Stats = {
+  total: number
+  parallel: number
+  runAt: number
+  runCount: number
+}
 
 export default function speedMeasureWrap(
   plugins: PluginOption[],
@@ -27,7 +33,7 @@ export default function speedMeasureWrap(
 
   const gapTimeOnce = maxGapTimeOnce || maxTransformTimeOnce
   function checkProcessDone() {
-    if (lastTransformRunAt && lastTransformRunAt < Date.now() - gapTimeOnce) {
+    if (lastTransformRunAt && lastTransformRunAt < performance.now() - gapTimeOnce) {
       printResults(statsMap, sort)
       statsMap = new Map()
     }
@@ -72,7 +78,13 @@ export default function speedMeasureWrap(
         maxHookNameLength = Math.max(maxHookNameLength, hookName.length)
       })
 
-      const table: { hookName: string; total: number; parallel: number; totalS: string; parallelS: string }[] = []
+      const table: {
+        hookName: string
+        total: number
+        parallel: number
+        totalS: string
+        parallelS: string
+      }[] = []
       hookStats.forEach((stats, hookName) => {
         const { total, parallel } = stats
         table.push({
@@ -128,7 +140,7 @@ export default function speedMeasureWrap(
         }
 
         hookStats.runCount++
-        const startAt = Date.now()
+        const startAt = performance.now()
 
         if (hookName === 'transform') {
           lastTransformRunAt = startAt
@@ -142,7 +154,7 @@ export default function speedMeasureWrap(
 
         function writeTime() {
           if (!hookStats) return
-          const endAt = Date.now()
+          const endAt = performance.now()
           hookStats.total += endAt - startAt
           hookStats.runCount--
           if (hookStats.runCount === 0) {

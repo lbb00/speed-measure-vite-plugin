@@ -1,6 +1,6 @@
 {
   "name": "speed-measure-vite-plugin",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "Measures your vite plugin transform speed",
   "exports": {
     ".": {
@@ -21,7 +21,7 @@
     "uniapp"
   ],
   "scripts": {
-    "build": "vite build",
+    "build": "pkgroll",
     "lint": "npx rome check ./src",
     "format": "npx rome format ./src --write"
   },
@@ -35,12 +35,16 @@
   ],
   "author": "lbb00",
   "devDependencies": {
+    "@types/node": "^24.2.0",
+    "pkgroll": "^2.15.1",
     "typescript": "^5.8.2",
-    "vite": "^6.2.3",
-    "vite-plugin-dts": "^4.5.3"
+    "vite": "^7.1.0"
   },
-  "packageManager": "pnpm@9.15.4+sha512.b2dc20e2fc72b3e18848459b37359a32064663e5627a51e4c74b2c29dd8e8e0491483c3abb40789cfd578bf362fb6ba8261b05f0387d76792ed6e23ea3b1b6a0",
+  "packageManager": "pnpm@10.14.0+sha512.ad27a79641b49c3e481a16a805baa71817a04bbe06a38d17e60e2eaee83f6a146c6a688125f5792e48dd5ba30e7da52a5cda4c3992b9ccf333f9ce223af84748",
   "dependencies": {
     "decorate-vite-plugin": "^0.1.0"
+  },
+  "peerDependencies": {
+    "vite": ">=3.0.0"
   }
 }
