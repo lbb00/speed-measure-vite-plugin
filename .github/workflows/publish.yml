@@ -1,22 +1,29 @@
-name: Publish to npm
+name: Publish Package
 
 on:
   push:
-    tags:
-      - 'v*'
+    branches:
+      - master
   workflow_dispatch:
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
-  publish:
-    name: Publish Package
+  release:
+    name: Release & Publish
     runs-on: ubuntu-latest
     permissions:
-      contents: read
-      id-token: write # Required for npm Trusted Publishing (OIDC)
+      contents: write       # Needed for Changesets to commit version bumps & git tags
+      pull-requests: write  # Needed for Changesets to create/update release PRs
+      id-token: write       # REQUIRED for npm Trusted Publishing (OIDC)
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Required for Changesets to inspect git history
 
       - name: Install pnpm
         uses: pnpm/action-setup@v4
@@ -33,10 +40,12 @@ jobs:
       - name: Run test suite
         run: pnpm test
 
-      - name: Build package
-        run: pnpm build
-
-      - name: Publish to npm via OIDC
-        run: pnpm publish --access public --provenance --no-git-checks
+      - name: Create Release PR or Publish to npm
+        uses: changesets/action@v1
+        with:
+          publish: pnpm release
+          version: pnpm version-packages
+          title: 'chore: version packages'
+          commit: 'chore: version packages'
         env:
-          NODE_AUTH_TOKEN: '' # Explicitly clear any secret token to trigger OIDC
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -31,10 +31,16 @@
     "build": "pkgroll",
     "test": "vitest run",
     "prepublishOnly": "pnpm build && pnpm test",
+    "changeset": "changeset",
+    "version-packages": "changeset version",
+    "release": "pnpm build && changeset publish",
     "playground:dev": "pnpm build && cd playground && (test -d node_modules/@vitejs/plugin-vue || pnpm install) && vite",
     "playground:build": "pnpm build && cd playground && (test -d node_modules/@vitejs/plugin-vue || pnpm install) && vite build",
     "lint": "npx rome check ./src",
     "format": "npx rome format ./src --write"
+  },
+  "publishConfig": {
+    "access": "public"
   },
   "license": "UNLICENSE (HTTP://UNLICENSE.ORG/)",
   "repository": {
@@ -46,6 +52,7 @@
   ],
   "author": "lbb00",
   "devDependencies": {
+    "@changesets/cli": "^3.0.3",
     "@types/node": "^24.2.0",
     "pkgroll": "^2.15.1",
     "rome": "12.1.3",
