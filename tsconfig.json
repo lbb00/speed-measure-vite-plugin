@@ -1,6 +1,13 @@
 {
   "compilerOptions": {
     "target": "ESNext",
-    "moduleResolution": "Node"
-  }
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "skipLibCheck": true,
+    "strict": true
+  },
+  "include": ["src/**/*", "tests/**/*"],
+  "exclude": ["node_modules", "dist", "playground"]
 }
