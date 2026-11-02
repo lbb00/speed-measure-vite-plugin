@@ -375,4 +375,58 @@ describe('speed-measure-vite-plugin', () => {
 
     vi.useRealTimers()
   })
+
+  it('exposes smvp.smvp and smvp.default aliases for CJS/ESM interop', () => {
+    expect(typeof (smvp as any).smvp).toBe('function')
+    expect(typeof (smvp as any).default).toBe('function')
+    expect((smvp as any).smvp).toBe(smvp)
+    expect((smvp as any).default).toBe(smvp)
+  })
+
+  it('measures early lifecycle hooks (config, configResolved) in wrapper syntax', async () => {
+    let capturedReport: MeasureReport | null = null
+    const earlyPlugin: Plugin = {
+      name: 'early-config-plugin',
+      config(cfg) {
+        return { define: { __EARLY__: 'true' } }
+      },
+      configResolved(cfg) {
+        // resolved hook
+      },
+      transform(code) {
+        return code
+      },
+    }
+
+    const wrappedPlugins = smvp([earlyPlugin], {
+      hooks: ['config', 'configResolved', 'transform'],
+      output: (report) => {
+        capturedReport = report
+      },
+    })
+
+    expect(Array.isArray(wrappedPlugins)).toBe(true)
+    const measure = (wrappedPlugins as Plugin[])[1]
+
+    // Simulate Vite calling config before configResolved
+    ;(earlyPlugin.config as any)?.call({} as any, {})
+
+    const fakeConfig: any = {
+      command: 'build',
+      plugins: wrappedPlugins,
+    }
+    ;(measure.configResolved as any)?.call({} as any, fakeConfig)
+    ;(earlyPlugin.configResolved as any)?.call({} as any, fakeConfig)
+
+    await (earlyPlugin.transform as any)?.call({} as any, 'code', 'file.js')
+    await (measure.closeBundle as any)?.call({} as any)
+
+    expect(capturedReport).not.toBeNull()
+    const pluginReport = capturedReport!.plugins.find((p) => p.pluginName === 'early-config-plugin')
+    expect(pluginReport).toBeDefined()
+    const hookNames = pluginReport!.hooks.map((h) => h.hookName)
+    expect(hookNames).toContain('config')
+    expect(hookNames).toContain('configResolved')
+    expect(hookNames).toContain('transform')
+  })
 })

@@ -1336,6 +1336,7 @@ function speedMeasurePlugin(
 }
 
 // Attach named aliases to default export for maximum CJS/ESM interop
+speedMeasurePlugin.default = speedMeasurePlugin
 speedMeasurePlugin.smvp = speedMeasurePlugin
 speedMeasurePlugin.printResults = printResults
 
