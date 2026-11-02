@@ -1,7 +1,7 @@
 {
   "name": "speed-measure-vite-plugin",
-  "version": "2.0.1",
-  "description": "Measures your vite plugin transform speed",
+  "version": "3.0.0",
+  "description": "Measures your Vite plugins execution and transform speed",
   "exports": {
     ".": {
       "import": {
@@ -17,11 +17,22 @@
   "type": "commonjs",
   "main": "dist/main.js",
   "keywords": [
-    "vite speed",
+    "vite",
+    "vite-plugin",
+    "speed",
+    "measure",
+    "speed-measure",
+    "performance",
+    "profiler",
+    "benchmark",
     "uniapp"
   ],
   "scripts": {
     "build": "pkgroll",
+    "test": "vitest run",
+    "prepublishOnly": "pnpm build && pnpm test",
+    "playground:dev": "pnpm build && cd playground && (test -d node_modules/@vitejs/plugin-vue || pnpm install) && vite",
+    "playground:build": "pnpm build && cd playground && (test -d node_modules/@vitejs/plugin-vue || pnpm install) && vite build",
     "lint": "npx rome check ./src",
     "format": "npx rome format ./src --write"
   },
@@ -37,13 +48,12 @@
   "devDependencies": {
     "@types/node": "^24.2.0",
     "pkgroll": "^2.15.1",
+    "rome": "12.1.3",
     "typescript": "^5.8.2",
-    "vite": "^7.1.0"
+    "vite": "^7.1.0",
+    "vitest": "^5.0.5"
   },
   "packageManager": "pnpm@10.14.0+sha512.ad27a79641b49c3e481a16a805baa71817a04bbe06a38d17e60e2eaee83f6a146c6a688125f5792e48dd5ba30e7da52a5cda4c3992b9ccf333f9ce223af84748",
-  "dependencies": {
-    "decorate-vite-plugin": "^0.1.0"
-  },
   "peerDependencies": {
     "vite": ">=3.0.0"
   }
