@@ -1,6 +1,6 @@
 # speed-measure-vite-plugin
 
-[English](./README.md) | 简体中文
+[English](README.md) | 简体中文
 
 [![NPM](https://img.shields.io/npm/v/speed-measure-vite-plugin)](https://www.npmjs.com/package/speed-measure-vite-plugin)
 [![NPM](https://img.shields.io/npm/dw/speed-measure-vite-plugin.svg)](https://www.npmjs.com/package/speed-measure-vite-plugin)
