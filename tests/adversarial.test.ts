@@ -2181,6 +2181,75 @@ describe('adversarial review TDD test coverage', () => {
     expect(childRepB!.hooks.find((h) => h.hookName === 'transform')?.calls).toBe(1)
   })
 
+  it('preserves sibling detection when wrapping factory result arrays (Codex P2 finding)', async () => {
+    let reportA: MeasureReport | null = null
+    let reportB: MeasureReport | null = null
+
+    const factoryPlugin: Plugin = {
+      name: 'factory-returning-array',
+      applyToEnvironment() {
+        return [
+          {
+            name: 'child-in-array',
+            transform(code: string) {
+              return code + ' // child transformed'
+            },
+          },
+        ]
+      },
+    }
+
+    const measureA = smvp({
+      hooks: ['transform'],
+      output: (r) => {
+        reportA = r
+      },
+    }) as Plugin
+
+    const measureB = smvp({
+      hooks: ['transform'],
+      output: (r) => {
+        reportB = r
+      },
+    }) as Plugin
+
+    const config = {
+      command: 'build',
+      plugins: [factoryPlugin, measureA, measureB],
+    } as unknown as ResolvedConfig
+
+    ;(measureA as any).configResolved?.(config)
+    ;(measureB as any).configResolved?.(config)
+
+    // Simulate Vite invoking applyToEnvironment factory hook
+    const childPlugins = (await (factoryPlugin.applyToEnvironment as any).call(
+      {} as any,
+      { name: 'client' },
+    )) as Plugin[]
+
+    expect(Array.isArray(childPlugins)).toBe(true)
+    expect(childPlugins.length).toBe(1)
+
+    // Simulate transform on child plugin
+    const child = childPlugins[0]
+    const res = await (child.transform as any).call({} as any, 'const x = 1;', 'x.js')
+    expect(res).toContain('// child transformed')
+
+    await (measureA.closeBundle as any).call({} as any)
+    await (measureB.closeBundle as any).call({} as any)
+
+    // Both reporters MUST report the child plugin transform!
+    expect(reportA).not.toBeNull()
+    const childRepA = reportA!.plugins.find((p) => p.pluginName === 'child-in-array')
+    expect(childRepA).toBeDefined()
+    expect(childRepA!.hooks.find((h) => h.hookName === 'transform')?.calls).toBe(1)
+
+    expect(reportB).not.toBeNull()
+    const childRepB = reportB!.plugins.find((p) => p.pluginName === 'child-in-array')
+    expect(childRepB).toBeDefined()
+    expect(childRepB!.hooks.find((h) => h.hookName === 'transform')?.calls).toBe(1)
+  })
+
   it('does not clean up shared measure instance until all build environments finish (Codex P1 finding)', async () => {
     const reports: MeasureReport[] = []
     const target: Plugin = {

@@ -499,6 +499,7 @@ function createMeasurePlugin(
 	const trackedPluginLists = new Set<Plugin[]>()
 	let trackedPlugins: Plugin[] | null = null
 	let trackedEnvironments: Record<string, { plugins?: Plugin[] }> | null = null
+	const knownSiblings = new Set<MeasurePluginInstance>()
 	let isSiblingHook: ((h: unknown) => boolean) | undefined
 
 	let devTimer: NodeJS.Timeout | null = null
@@ -529,25 +530,48 @@ function createMeasurePlugin(
 		cleanupActions.length = 0
 		wrappedPlugins.clear()
 		wrappedHooks.clear()
+		knownSiblings.clear()
 		isSiblingHook = undefined
 	}
 
 	function updateSiblingHooks(plugins?: unknown) {
-		if (!plugins || !Array.isArray(plugins)) return
-		const siblings = plugins.filter(
-			(p) =>
-				p &&
-				(p as unknown as MeasurePluginInstance).name ===
-					"speed-measure-vite-plugin" &&
-				(p as unknown as MeasurePluginInstance).wrappedHooks &&
-				(p as unknown as MeasurePluginInstance).wrappedHooks !== wrappedHooks,
-		) as MeasurePluginInstance[]
-		isSiblingHook = (h) =>
-			siblings.some(
-				(s) =>
-					s.wrappedHooks.has(h as object) ||
-					hasWrapperInSet(h, s.wrappedHooks),
-			)
+		if (!plugins) return
+		let foundNew = false
+		function scan(items: unknown) {
+			if (!items || !Array.isArray(items)) return
+			for (const p of items) {
+				if (Array.isArray(p)) {
+					scan(p)
+				} else if (
+					p &&
+					typeof p === "object" &&
+					(p as unknown as MeasurePluginInstance).name ===
+						"speed-measure-vite-plugin" &&
+					(p as unknown as MeasurePluginInstance).wrappedHooks &&
+					(p as unknown as MeasurePluginInstance).wrappedHooks !== wrappedHooks
+				) {
+					if (!knownSiblings.has(p as MeasurePluginInstance)) {
+						knownSiblings.add(p as MeasurePluginInstance)
+						foundNew = true
+					}
+				}
+			}
+		}
+		scan(plugins)
+		if (foundNew || !isSiblingHook) {
+			isSiblingHook = (h) => {
+				for (const s of knownSiblings) {
+					if (
+						s.wrappedHooks &&
+						(s.wrappedHooks.has(h as object) ||
+							hasWrapperInSet(h, s.wrappedHooks))
+					) {
+						return true
+					}
+				}
+				return false
+			}
+		}
 	}
 
 	activeCleanups.add(cleanup)
