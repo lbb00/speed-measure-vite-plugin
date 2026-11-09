@@ -2116,6 +2116,71 @@ describe('adversarial review TDD test coverage', () => {
     expect(repB!.hooks[0].calls).toBe(1)
   })
 
+  it('preserves sibling wrappers around applyToEnvironment when multiple SMVP instances share config (Codex P2 finding)', async () => {
+    let reportA: MeasureReport | null = null
+    let reportB: MeasureReport | null = null
+
+    const factoryPlugin: Plugin = {
+      name: 'shared-factory-target',
+      applyToEnvironment(env) {
+        return {
+          name: 'child-plugin',
+          transform(code) {
+            return code + ' // transformed'
+          },
+        }
+      },
+    }
+
+    // Instance A measures applyToEnvironment
+    const measureA = smvp({
+      hooks: ['applyToEnvironment'],
+      output: (r) => {
+        reportA = r
+      },
+    }) as Plugin
+
+    // Instance B only measures transform (the default)
+    const measureB = smvp({
+      hooks: ['transform'],
+      output: (r) => {
+        reportB = r
+      },
+    }) as Plugin
+
+    const config = {
+      command: 'build',
+      plugins: [factoryPlugin, measureA, measureB],
+    } as unknown as ResolvedConfig
+
+    ;(measureA as any).configResolved?.(config)
+    ;(measureB as any).configResolved?.(config)
+
+    // Simulate Vite invoking applyToEnvironment factory hook
+    const childPlugin = await (factoryPlugin.applyToEnvironment as any).call({} as any, { name: 'client' })
+
+    expect(childPlugin).toBeDefined()
+
+    // Simulate transform hook execution on returned child plugin
+    const child = Array.isArray(childPlugin) ? childPlugin[0] : childPlugin
+    await (child.transform as any).call({} as any, 'const x = 1;', 'x.js')
+
+    await (measureA.closeBundle as any).call({} as any)
+    await (measureB.closeBundle as any).call({} as any)
+
+    // Instance A must have recorded and reported applyToEnvironment
+    expect(reportA).not.toBeNull()
+    const factoryRepA = reportA!.plugins.find((p) => p.pluginName === 'shared-factory-target')
+    expect(factoryRepA).toBeDefined()
+    expect(factoryRepA!.hooks.find((h) => h.hookName === 'applyToEnvironment')?.calls).toBe(1)
+
+    // Instance B must have recorded and reported child plugin transform
+    expect(reportB).not.toBeNull()
+    const childRepB = reportB!.plugins.find((p) => p.pluginName === 'child-plugin')
+    expect(childRepB).toBeDefined()
+    expect(childRepB!.hooks.find((h) => h.hookName === 'transform')?.calls).toBe(1)
+  })
+
   it('does not clean up shared measure instance until all build environments finish (Codex P1 finding)', async () => {
     const reports: MeasureReport[] = []
     const target: Plugin = {

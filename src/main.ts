@@ -542,7 +542,12 @@ function createMeasurePlugin(
 				(p as unknown as MeasurePluginInstance).wrappedHooks &&
 				(p as unknown as MeasurePluginInstance).wrappedHooks !== wrappedHooks,
 		) as MeasurePluginInstance[]
-		isSiblingHook = (h) => siblings.some((s) => s.wrappedHooks.has(h as object))
+		isSiblingHook = (h) =>
+			siblings.some(
+				(s) =>
+					s.wrappedHooks.has(h as object) ||
+					hasWrapperInSet(h, s.wrappedHooks),
+			)
 	}
 
 	activeCleanups.add(cleanup)
@@ -803,9 +808,22 @@ function createMeasurePlugin(
 			(plugin as unknown as UnknownRecord).applyToEnvironment
 		if (
 			typeof rawApply === "function" &&
-			!wrappedHooks.has(rawApply as object)
+			!hasWrapperInSet(rawApply, wrappedHooks)
 		) {
-			const rawOriginalApply = unwrapRawOriginal(rawApply as GenericFunction)
+			const isSibling =
+				Boolean(isSiblingHook && isSiblingHook(rawApply)) ||
+				Boolean(
+					isSiblingHook &&
+						(plugin as unknown as UnknownRecord).applyToEnvironment &&
+						isSiblingHook(
+							(plugin as unknown as UnknownRecord).applyToEnvironment,
+						),
+				)
+			const rawOriginalApply =
+				(rawApply as unknown as { __rawOriginal?: GenericFunction })
+					.__rawOriginal && !isSibling
+					? unwrapRawOriginal(rawApply as GenericFunction)
+					: (rawApply as GenericFunction)
 
 			const shouldMeasureApply = hooksToMeasure.includes("applyToEnvironment")
 
@@ -1017,6 +1035,7 @@ function createMeasurePlugin(
 	function wrapPluginsOption<T>(option: T): T {
 		if (!option) return option
 		if (Array.isArray(option)) {
+			updateSiblingHooks(option)
 			const isReadOnly = Object.isFrozen(option) || !Object.isExtensible(option)
 			let arr: unknown[] = isReadOnly ? [...option] : option
 			for (let i = 0; i < option.length; i++) {
