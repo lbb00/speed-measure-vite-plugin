@@ -21,28 +21,9 @@ pnpm add -D speed-measure-vite-plugin
 
 ## Usage
 
-Supports both the wrapper syntax (v2 style) and the standard plugin syntax (v3 style):
+### Plugin Syntax (v3 Recommended)
 
-### Option A: Wrapper Syntax (v2 compatible)
-
-Wrap your `plugins` array with `smvp`. This is also required if you want to measure early lifecycle hooks like `config` or `configResolved`:
-
-```ts
-// vite.config.ts
-import { defineConfig } from 'vite'
-import vue from '@vitejs/plugin-vue'
-import smvp from 'speed-measure-vite-plugin'
-
-export default defineConfig({
-  plugins: smvp([vue()], {
-    // options (optional)
-  }),
-})
-```
-
-### Option B: Plugin Syntax (v3)
-
-Add `smvp()` directly to the `plugins` array:
+Add `smvp()` directly into your `plugins` array like any standard Vite plugin:
 
 ```ts
 // vite.config.ts
@@ -60,10 +41,29 @@ export default defineConfig({
 })
 ```
 
+### Wrapper Syntax (v2 Compatible)
+
+Fully backwards-compatible with the legacy `smvp([vue()])` wrapper syntax. Wrap your `plugins` array with `smvp` (also required if you want to measure early lifecycle hooks like `config` or `configResolved`):
+
+```ts
+// vite.config.ts
+import { defineConfig } from 'vite'
+import vue from '@vitejs/plugin-vue'
+import smvp from 'speed-measure-vite-plugin'
+
+export default defineConfig({
+  plugins: smvp([vue()], {
+    // options (optional)
+  }),
+})
+```
+
 ## Options
 
 ```ts
-smvp(plugins, {
+// Standard plugin syntax: smvp(options)
+// Wrapper syntax compatible: smvp(plugins, options)
+smvp({
   // Hooks to measure. Defaults to ['transform']
   hooks: ['transform', 'resolveId', 'load'],
 

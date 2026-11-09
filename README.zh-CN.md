@@ -21,28 +21,9 @@ pnpm add -D speed-measure-vite-plugin
 
 ## 使用方式
 
-同时支持包装器写法（兼容 v2 老写法）与标准插件写法（v3）：
+### 标准插件语法（v3 推荐）
 
-### 写法一：包装器语法（兼容 v2 老写法）
-
-使用 `smvp` 包裹 `plugins` 数组。如果需要测量 `config` 或 `configResolved` 等早期配置阶段的钩子，需使用该写法：
-
-```ts
-// vite.config.ts
-import { defineConfig } from 'vite'
-import vue from '@vitejs/plugin-vue'
-import smvp from 'speed-measure-vite-plugin'
-
-export default defineConfig({
-  plugins: smvp([vue()], {
-    // 配置项（可选）
-  }),
-})
-```
-
-### 写法二：标准插件语法（v3 推荐）
-
-直接将 `smvp()` 放入 `plugins` 数组末尾：
+直接将 `smvp()` 作为标准 Vite 插件加入 `plugins` 数组中：
 
 ```ts
 // vite.config.ts
@@ -60,10 +41,29 @@ export default defineConfig({
 })
 ```
 
+### 包装器语法（兼容 v2 老写法）
+
+完全向下兼容旧版本的 `smvp([vue()])` 包裹写法。如果需要测量 `config` 或 `configResolved` 等早期配置阶段的钩子，仍需使用该写法：
+
+```ts
+// vite.config.ts
+import { defineConfig } from 'vite'
+import vue from '@vitejs/plugin-vue'
+import smvp from 'speed-measure-vite-plugin'
+
+export default defineConfig({
+  plugins: smvp([vue()], {
+    // 配置项（可选）
+  }),
+})
+```
+
 ## 配置项
 
 ```ts
-smvp(plugins, {
+// 标准插件语法：smvp(options)
+// 包装器语法兼容：smvp(plugins, options)
+smvp({
   // 需要测量的 hook，默认为 ['transform']
   hooks: ['transform', 'resolveId', 'load'],
 
