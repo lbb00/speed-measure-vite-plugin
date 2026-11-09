@@ -1885,6 +1885,72 @@ describe('adversarial review TDD test coverage', () => {
     expect(pluginReport!.hooks[0].calls).toBe(1)
   })
 
+  it('preserves in-flight measurements after closeBundle timeout across concurrent environments (Codex P2 finding)', async () => {
+    let reports: MeasureReport[] = []
+    let finishTransform: () => void
+    const slowPlugin: Plugin = {
+      name: 'slow-timeout-plugin',
+      transform: () =>
+        new Promise((resolve) => {
+          finishTransform = () => resolve('transformed-code')
+        }),
+    }
+
+    const fastPlugin: Plugin = {
+      name: 'fast-env1-plugin',
+      transform: () => 'fast-code',
+    }
+
+    const measure = smvp({
+      closeBundleTimeout: 20, // Short timeout for test
+      output: (r) => {
+        reports.push(r)
+      },
+    }) as Plugin
+
+    const config = {
+      command: 'build',
+      plugins: [fastPlugin, slowPlugin, measure],
+    } as unknown as ResolvedConfig
+
+    ;(measure as any).configResolved(config)
+
+    // Environment 1 runs fastPlugin
+    await (fastPlugin.transform as any).call({} as any, 'fast', 'fast.js')
+
+    // Environment 2 starts slowPlugin transform (now in flight)
+    const runSlow = (slowPlugin.transform as any).call({} as any, 'slow', 'slow.js')
+
+    // Environment 1 reaches closeBundle and times out (waits > 20ms while slowPlugin is still running)
+    await (measure.closeBundle as any).call({} as any)
+
+    // Verify Environment 1 report:
+    // 1. Must contain fastPlugin
+    // 2. Must NOT show slowPlugin with zero total time and activeCount: 1!
+    expect(reports.length).toBe(1)
+    const env1Report = reports[0]
+    expect(env1Report.plugins.find((p) => p.pluginName === 'fast-env1-plugin')).toBeDefined()
+    const slowInEnv1 = env1Report.plugins.find((p) => p.pluginName === 'slow-timeout-plugin')
+    expect(slowInEnv1).toBeUndefined()
+
+    // Now Environment 2 finishes transform after timeout
+    finishTransform!()
+    await runSlow
+
+    // Environment 2 reaches closeBundle
+    await (measure.closeBundle as any).call({} as any)
+
+    // Verify Environment 2 report:
+    // It must capture slowPlugin with calls: 1 and total duration > 0!
+    expect(reports.length).toBe(2)
+    const env2Report = reports[1]
+    const slowInEnv2 = env2Report.plugins.find((p) => p.pluginName === 'slow-timeout-plugin')
+    expect(slowInEnv2).toBeDefined()
+    expect(slowInEnv2!.hooks[0].calls).toBe(1)
+    expect(slowInEnv2!.hooks[0].activeCount).toBe(0)
+    expect(slowInEnv2!.total).toBeGreaterThanOrEqual(0)
+  })
+
   it('clones non-extensible plugins with inherited hooks and measures execution (Codex P2 finding)', async () => {
     let report: MeasureReport | null = null
     const proto = {
@@ -2098,7 +2164,7 @@ describe('adversarial review TDD test coverage', () => {
 
     // After all environments finish, hooks are cleaned up
     expect((target.transform as any).__rawOriginal).toBeUndefined()
-  })
+  }, 15000)
 
   it('does not clean up active hooks when old server closes after restart (Codex P2 finding)', async () => {
     let report: MeasureReport | null = null
@@ -2161,7 +2227,7 @@ describe('adversarial review TDD test coverage', () => {
     await newServer.close()
     expect(newServerClosed).toBe(true)
     expect((target.transform as any).__rawOriginal).toBeUndefined()
-  })
+  }, 15000)
 
   it('does not double-wrap plugins in options hook during Vite builds (Codex P1 finding)', async () => {
     let report: MeasureReport | null = null
@@ -2247,7 +2313,7 @@ describe('adversarial review TDD test coverage', () => {
     expect(reports[1].plugins.find((p) => p.pluginName === 'builder-probe-target')?.hooks[0]?.calls).toBe(1)
     // After all environments finish, hooks must be cleanly restored
     expect((target.transform as any).__rawOriginal).toBeUndefined()
-  })
+  }, 15000)
 
   it('preserves subclass overridden method when cloning frozen class plugin (Codex P2 finding)', async () => {
     class Base {

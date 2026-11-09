@@ -79,6 +79,11 @@ export interface SpeedMeasureOptions {
 	 * @default false
 	 */
 	disable?: boolean
+	/**
+	 * Timeout in ms to wait for in-flight hooks in closeBundle before flushing report.
+	 * @default 10000
+	 */
+	closeBundleTimeout?: number
 }
 
 type UnknownRecord = Record<string | symbol, unknown>
@@ -314,12 +319,20 @@ function printResults(
 
 	statsMap.forEach((hookMap, pluginName) => {
 		let pluginTotal = 0
+		let hasCompletedHooks = false
 		hookMap.forEach((stat) => {
-			pluginTotal += stat.total
+			if (stat.calls > 0 || stat.total > 0) {
+				pluginTotal += stat.total
+				hasCompletedHooks = true
+			}
 		})
-		pluginTotals.set(pluginName, pluginTotal)
-		allPluginsTotal += pluginTotal
+		if (hasCompletedHooks) {
+			pluginTotals.set(pluginName, pluginTotal)
+			allPluginsTotal += pluginTotal
+		}
 	})
+
+	if (pluginTotals.size === 0) return
 
 	let pluginEntries = Array.from(pluginTotals.entries())
 	if (threshold > 0) {
@@ -335,13 +348,15 @@ function printResults(
 				const hooks: PluginItemReport["hooks"] = []
 				if (hookMap) {
 					hookMap.forEach((stat, hookName) => {
-						hooks.push({
-							hookName,
-							total: stat.total,
-							parallel: getEffectiveParallel(stat),
-							calls: stat.calls,
-							activeCount: stat.activeCount,
-						})
+						if (stat.calls > 0 || stat.total > 0) {
+							hooks.push({
+								hookName,
+								total: stat.total,
+								parallel: getEffectiveParallel(stat),
+								calls: stat.calls,
+								activeCount: stat.activeCount,
+							})
+						}
 					})
 					hooks.sort((a, b) => sortFn(a.total, b.total))
 				}
@@ -373,8 +388,10 @@ function printResults(
 		if (!hookStats || hookStats.size === 0) return
 
 		let maxHookNameLength = 0
-		hookStats.forEach((_, hookName) => {
-			maxHookNameLength = Math.max(maxHookNameLength, hookName.length)
+		hookStats.forEach((stats, hookName) => {
+			if (stats.calls > 0 || stats.total > 0) {
+				maxHookNameLength = Math.max(maxHookNameLength, hookName.length)
+			}
 		})
 
 		const table: {
@@ -387,15 +404,17 @@ function printResults(
 		}[] = []
 
 		hookStats.forEach((stats, hookName) => {
-			const effectiveParallel = getEffectiveParallel(stats)
-			table.push({
-				hookName,
-				total: stats.total,
-				parallel: effectiveParallel,
-				calls: stats.calls,
-				totalS: formatDuration(stats.total),
-				parallelS: formatDuration(effectiveParallel),
-			})
+			if (stats.calls > 0 || stats.total > 0) {
+				const effectiveParallel = getEffectiveParallel(stats)
+				table.push({
+					hookName,
+					total: stats.total,
+					parallel: effectiveParallel,
+					calls: stats.calls,
+					totalS: formatDuration(stats.total),
+					parallelS: formatDuration(effectiveParallel),
+				})
+			}
 		})
 
 		table.sort((a, b) => sortFn(a.total, b.total))
@@ -436,7 +455,11 @@ function createMeasurePlugin(
 	isWrapperMode = false,
 ): MeasurePluginInstance {
 	const opts = options ?? {}
-	const { hooks = ["transform"], disable = false } = opts
+	const {
+		hooks = ["transform"],
+		disable = false,
+		closeBundleTimeout = 10000,
+	} = opts
 
 	if (disable) {
 		const disabledPlugin = {
@@ -601,11 +624,11 @@ function createMeasurePlugin(
 				stats.activeStart = startAt
 			}
 			stats.activeCount++
-			stats.calls++
 
 			const finish = () => {
 				const endAt = performance.now()
 				stats.total += Math.max(0, endAt - startAt)
+				stats.calls++
 				stats.activeCount--
 				if (stats.activeCount === 0) {
 					stats.parallel += Math.max(0, endAt - stats.activeStart)
@@ -801,11 +824,11 @@ function createMeasurePlugin(
 						stats.activeStart = startAt
 					}
 					stats.activeCount++
-					stats.calls++
 
 					const finish = () => {
 						const endAt = performance.now()
 						stats.total += Math.max(0, endAt - startAt)
+						stats.calls++
 						stats.activeCount--
 						if (stats.activeCount === 0) {
 							stats.parallel += Math.max(0, endAt - stats.activeStart)
@@ -1225,13 +1248,31 @@ function createMeasurePlugin(
 					try {
 						if (hasActiveHooks()) {
 							let waited = 0
-							while (hasActiveHooks() && waited < 10000) {
+							while (hasActiveHooks() && waited < closeBundleTimeout) {
 								await new Promise((resolve) => setTimeout(resolve, 10))
 								waited += 10
 							}
 						}
 						printResults(statsMap, opts)
-						statsMap.clear()
+
+						// Preserve active in-flight hooks in statsMap so their finish() callbacks
+						// remain attached and their durations are captured in later environment reports.
+						for (const [pluginName, hookMap] of Array.from(statsMap.entries())) {
+							for (const [hookName, stat] of Array.from(hookMap.entries())) {
+								if (stat.activeCount === 0) {
+									hookMap.delete(hookName)
+								} else {
+									// The completed calls were already reported above; reset reported metrics
+									// while preserving in-flight activeCount and timing for ongoing calls.
+									stat.calls = 0
+									stat.total = 0
+									stat.parallel = 0
+								}
+							}
+							if (hookMap.size === 0) {
+								statsMap.delete(pluginName)
+							}
+						}
 						if (devTimer) {
 							clearTimeout(devTimer)
 							devTimer = null
