@@ -3,6 +3,7 @@
 English | [简体中文](README.zh-CN.md)
 
 [![NPM](https://img.shields.io/npm/v/speed-measure-vite-plugin)](https://www.npmjs.com/package/speed-measure-vite-plugin)
+[![NPM Downloads](https://img.shields.io/npm/dm/speed-measure-vite-plugin)](https://www.npmjs.com/package/speed-measure-vite-plugin)
 [![License](https://img.shields.io/github/license/lbb00/speed-measure-vite-plugin.svg)](https://github.com/lbb00/speed-measure-vite-plugin/blob/master/LICENSE)
 
 Measure the execution and transform speed of your Vite plugins. The Vite equivalent of `speed-measure-webpack-plugin`.
